@@ -1,0 +1,50 @@
+# Python
+*.py[cod]
+*$py.class
+*.so
+.Python
+__pycache__/
+*.pyc
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+/src/backend/media/
+/src/backend/staticfiles/
+/src/backend/media
+/src/backend/staticfiles
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Node (Frontend)
+node_modules/
+/dist
+/build
+*.local
+
+# Coverage
+htmlcov/
+.coverage
+*.cover
+.pytest_cache/
+
+# OS
+Thumbs.db
