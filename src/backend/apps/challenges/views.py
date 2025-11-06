@@ -30,7 +30,6 @@ class ChallengeCopyViewSet(viewsets.ModelViewSet):
         elif user.user_type == 'participant':
             return ChallengeCopy.objects.filter(participant=user)
         elif user.user_type == 'tutor':
-            # Tutores podem ver cópias dos membros de suas equipes
             team_members = user.tutored_teams.values_list('members__participant', flat=True)
             return ChallengeCopy.objects.filter(participant__in=team_members)
         return ChallengeCopy.objects.none()
@@ -47,7 +46,6 @@ class ChallengeCopyViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        # Determina o próximo número de cópia
         max_copy = ChallengeCopy.objects.filter(
             challenge=challenge,
             participant=request.user
@@ -55,12 +53,11 @@ class ChallengeCopyViewSet(viewsets.ModelViewSet):
         
         next_copy_number = (max_copy or 0) + 1
         
-        # Cria a cópia
         copy = ChallengeCopy.objects.create(
             challenge=challenge,
             participant=request.user,
             copy_number=next_copy_number,
-            notebook_file=challenge.notebook_template  # Copia o template
+            notebook_file=challenge.notebook_template
         )
         
         serializer = self.get_serializer(copy)
@@ -77,14 +74,12 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         if user.user_type == 'admin':
             return Submission.objects.all()
         elif user.user_type == 'participant':
-            # Participantes veem submissões da própria equipe
             try:
                 team = user.team_membership.team
                 return Submission.objects.filter(team=team)
             except:
                 return Submission.objects.none()
         elif user.user_type == 'tutor':
-            # Tutores veem submissões de suas equipes
             return Submission.objects.filter(team__tutor=user)
         return Submission.objects.none()
     
@@ -106,7 +101,6 @@ class SubmissionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Verifica se o participante está em uma equipe
         try:
             team = request.user.team_membership.team
         except:
@@ -115,7 +109,6 @@ class SubmissionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Cria a submissão
         submission_data = {
             'challenge_copy': copy.id,
             'team': team.id,
