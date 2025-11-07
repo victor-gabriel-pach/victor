@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
-from .models import User, Team, TeamMember
+from .models import User, Team, TeamMember, ParticipantDocument
+from django.conf import settings
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -10,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'username', 'nickname', 'email', 'user_type',
-            'avatar', 'bio', 'coins', 'school', 'created_at'
+            'avatar', 'bio', 'coins', 'school', 'school_grade', 'is_eligible', 'created_at'
         ]
         read_only_fields = ['id', 'coins', 'created_at']
 
@@ -24,7 +25,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'username', 'nickname', 'email', 'password', 'password2',
-            'user_type', 'school'
+            'user_type', 'school', 'school_grade'
         ]
     
     def validate(self, attrs):
@@ -34,6 +35,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         validated_data.pop('password2')
+        # Determinar elegibilidade básica baseada na série/ano informado
+        grade = validated_data.get('school_grade')
+        if grade in ['9ef', '1em', '2em', '3em']:
+            validated_data['is_eligible'] = True
+        else:
+            validated_data['is_eligible'] = False
+
         user = User.objects.create_user(**validated_data)
         return user
 
@@ -69,3 +77,19 @@ class TeamCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Team
         fields = ['name', 'tutor']
+
+
+class ParticipantDocumentSerializer(serializers.ModelSerializer):
+    """Serializer para upload/visualização de documentos de participante"""
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = ParticipantDocument
+        fields = ['id', 'user', 'file', 'doc_type', 'status', 'uploaded_at', 'reviewed_at', 'review_notes']
+        read_only_fields = ['id', 'user', 'status', 'uploaded_at', 'reviewed_at']
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            validated_data['user'] = request.user
+        return super().create(validated_data)

@@ -3,10 +3,11 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db.models import Q
-from .models import User, Team, TeamMember
+from .models import User, Team, TeamMember, ParticipantDocument
 from .serializers import (
     UserSerializer, UserRegistrationSerializer,
-    TeamSerializer, TeamCreateSerializer, TeamMemberSerializer
+    TeamSerializer, TeamCreateSerializer, TeamMemberSerializer,
+    ParticipantDocumentSerializer
 )
 
 
@@ -130,3 +131,47 @@ class TeamViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(teams, many=True)
         return Response(serializer.data)
+
+
+class ParticipantDocumentViewSet(viewsets.ModelViewSet):
+    """ViewSet para upload/gestão simples de documentos de participantes."""
+    queryset = ParticipantDocument.objects.all()
+    serializer_class = ParticipantDocumentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = super().get_queryset()
+        # admins podem ver todos
+        if user.is_superuser or getattr(user, 'user_type', None) == 'admin':
+            return qs
+        return qs.filter(user=user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def review(self, request, pk=None):
+        """Ação para admins revisarem (aprovar/rejeitar) um documento."""
+        doc = self.get_object()
+        user = request.user
+        if not (user.is_superuser or getattr(user, 'user_type', None) == 'admin'):
+            return Response({'error': 'Permissão negada.'}, status=status.HTTP_403_FORBIDDEN)
+
+        status_val = request.data.get('status')
+        notes = request.data.get('review_notes', '')
+        if status_val not in ['approved', 'rejected', 'pending']:
+            return Response({'error': 'Status inválido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        doc.status = status_val
+        doc.review_notes = notes
+        from django.utils import timezone
+        doc.reviewed_at = timezone.now()
+        doc.save()
+
+        # se aprovou e for comprovante escolar, marcar elegibilidade do usuário
+        if doc.status == 'approved' and doc.doc_type == 'school_proof':
+            doc.user.is_eligible = True
+            doc.user.save()
+
+        return Response(ParticipantDocumentSerializer(doc, context={'request': request}).data)

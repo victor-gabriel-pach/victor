@@ -27,6 +27,23 @@ class User(AbstractUser):
     
     # Campos específicos para participantes
     school = models.CharField(max_length=200, blank=True, verbose_name='Escola')
+    SCHOOL_GRADE_CHOICES = [
+        ('9ef', '9º ano do Ensino Fundamental'),
+        ('1em', '1º ano do Ensino Médio'),
+        ('2em', '2º ano do Ensino Médio'),
+        ('3em', '3º ano do Ensino Médio'),
+        ('other', 'Outro')
+    ]
+
+    school_grade = models.CharField(
+        max_length=10,
+        choices=SCHOOL_GRADE_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name='Série/Ano Escolar'
+    )
+
+    is_eligible = models.BooleanField(default=False, verbose_name='Elegível')
     
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Data de Criação')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Data de Atualização')
@@ -110,3 +127,43 @@ class TeamMember(models.Model):
     
     def __str__(self):
         return f"{self.participant.nickname} - {self.team.name}"
+
+
+class ParticipantDocument(models.Model):
+    """
+    Documento enviado pelo participante para comprovação (ex: comprovante escolar,
+    documento de identidade). Fluxo simples: upload pelo usuário, status pendente,
+    revisão por admin que pode aprovar/rejeitar.
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pendente'),
+        ('approved', 'Aprovado'),
+        ('rejected', 'Rejeitado'),
+    ]
+
+    DOC_TYPE_CHOICES = [
+        ('id', 'Documento de Identidade'),
+        ('school_proof', 'Comprovante Escolar'),
+        ('other', 'Outro'),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='documents',
+        verbose_name='Usuário'
+    )
+    file = models.FileField(upload_to='participant_documents/')
+    doc_type = models.CharField(max_length=30, choices=DOC_TYPE_CHOICES, default='other')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_notes = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = 'Documento do Participante'
+        verbose_name_plural = 'Documentos dos Participantes'
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return f"{self.user.nickname} - {self.get_doc_type_display()} ({self.status})"
