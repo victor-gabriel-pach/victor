@@ -71,3 +71,13 @@ export const logout = () => {
   localStorage.removeItem('refresh')
   window.location.href = '/login'
 }
+
+export const getChallenges = async () => {
+  const res = await api.get("challenges/challenges/")
+  return res.data
+}
+
+export const getChallengeById = async (id: string | number) => {
+  const res = await api.get(`challenges/challenges/${id}/`)
+  return res.data
+}

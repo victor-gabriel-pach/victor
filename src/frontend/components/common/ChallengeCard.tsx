@@ -44,18 +44,19 @@ function ChallengeCard({ title, coinsReward, createdAt }: ChallengeCardProps) {
         flex flex-col 
         rounded-2xl 
         w-full 
-        h-[40dvh] 
+        h-[300px]
         overflow-hidden 
         transition-transform 
         duration-300 
         hover:-translate-y-2
+        hover:cursor-pointer
       "
       style={{
         boxShadow: `0 0 0 transparent`, // initial state
       }}
     >
       <div
-        className="h-[30%] w-full rounded-t-2xl"
+        className="grow-3 w-full rounded-t-2xl"
         style={{
           backgroundImage: gradient,
         }}
@@ -63,20 +64,7 @@ function ChallengeCard({ title, coinsReward, createdAt }: ChallengeCardProps) {
 
       <div
         className="
-          content 
-          h-[70%] 
-          w-full
-          min-h-min
-          max-h-40
-          bg-card 
-          text-card-foreground 
-          px-4 
-          py-3
-          transition-shadow 
-          duration-300
-          hover:shadow-[0_0_25px_var(--hover-color)]
-          rounded-b-2xl
-        "
+        content w-full min-h-min max-h-40 bg-card text-card-foreground px-4 py-3 transition-shadow duration-300 hover:shadow-[0_0_25px_var(--hover-color)] rounded-b-2xl"
         style={{
           // Use the same gradient colors to build a glow-like shadow
           // Trick: extract a color from the gradient for hover
